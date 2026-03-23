@@ -232,3 +232,32 @@ Those scripts expect `infra-base` to exist as a sibling at `../infra-base`.
 - The root repo is intended to be an agnostic `config-repo`, not the source-of-truth repo for the child applications.
 - In a real organization, each app repo can instead include `infra-base` as a submodule named `infra-base/`.
 
+## When You Need Submodules
+
+In this demo, the app repos reference `../infra-base/...`.
+That means if these folders already exist side by side in your local workspace, the demo should work without submodules.
+
+You only need the submodule command if you change the architecture so each app repo contains its own `infra-base/` checkout inside it.
+
+### Rule of thumb
+
+- current local workspace: no submodule command needed
+- fresh machine with only the root `config-repo`: clone the child repos first, either with `make init ...URLS...` or manually
+- future per-app standalone repo model: then use submodules
+
+### Example
+
+If you already have this layout:
+
+```text
+docker-compose-prod/
+├── infra-base/
+├── repo-api-service/
+├── repo-frontend/
+└── repo-worker/
+```
+
+then you can run the demo directly and do not need `git submodule update --init --recursive`.
+
+If you only cloned the root `config-repo`, then run `make init` with repo URLs or clone the child repos manually before starting the demo.
+
