@@ -203,6 +203,7 @@ make logs
 make stop
 make clear
 ./validate.sh
+make gitleaks
 ```
 
 If needed, `make init` creates a local secrets file from the example in `infra-base/env`.
@@ -260,4 +261,5 @@ docker-compose-prod/
 then you can run the demo directly and do not need `git submodule update --init --recursive`.
 
 If you only cloned the root `config-repo`, then run `make init` with repo URLs or clone the child repos manually before starting the demo.
+
 

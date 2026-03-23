@@ -22,7 +22,7 @@ endif
 DOCKER := set DOCKER_CONFIG=$(DOCKER_CONFIG_DIR)&& docker
 DC := $(DOCKER) compose $(ENV_FILE_FLAGS) --project-directory $(REPO) $(COMPOSE_FILES) -p $(PROJECT_NAME)-$(ENV)
 
-.PHONY: help init clone-repos clone-infra-base clone-repo-api-service clone-repo-frontend clone-repo-worker setup run up run-fg stop down restart clear clean logs ps config validate pull build
+.PHONY: help init clone-repos clone-infra-base clone-repo-api-service clone-repo-frontend clone-repo-worker setup run up run-fg stop down restart clear clean logs ps config validate pull build gitleaks
 .PHONY: run-dev run-ci run-prod stop-dev stop-ci stop-prod clear-dev clear-ci clear-prod
 
 help:
@@ -41,6 +41,7 @@ help:
 	@echo "  make validate             Validate the merged compose config"
 	@echo "  make pull                 Pull the latest container images"
 	@echo "  make build                Build images if the stack later adds build steps"
+	@echo "  make gitleaks             Run a Dockerized gitleaks scan on the workspace files"
 	@echo ""
 	@echo "Environment-aware usage:"
 	@echo "  make init INFRA_BASE_URL=<url> REPO_API_SERVICE_URL=<url>"
@@ -51,7 +52,7 @@ help:
 
 init: clone-repos
 	@if not exist ".docker-config" mkdir ".docker-config"
-	@if not exist "infra-base\\env\\.env.secrets" (if exist "infra-base\\env\\.env.secrets.example" (copy /Y "infra-base\\env\\.env.secrets.example" "infra-base\\env\\.env.secrets" >NUL && echo "Created infra-base\\env\\.env.secrets from example. Update it with real local secrets.") else (echo "Skipping local secrets file creation. Missing infra-base\\env\\.env.secrets.example."))
+	@if not exist "infra-base\env\.env.secrets" (if exist "infra-base\env\.env.secrets.example" (copy /Y "infra-base\env\.env.secrets.example" "infra-base\env\.env.secrets" >NUL && echo "Created infra-base\env\.env.secrets from example. Update it with real local secrets.") else (echo "Skipping local secrets file creation. Missing infra-base\env\.env.secrets.example."))
 	-@$(DOCKER) network create app-network >NUL 2>&1
 	-@$(DOCKER) network create monitoring-network >NUL 2>&1
 	@echo "Shared Docker networks are ready."
@@ -112,6 +113,9 @@ pull:
 
 build:
 	$(DC) build
+
+gitleaks:
+	@$(DOCKER) run --rm -v "$(CURDIR):/repo" zricethezav/gitleaks:latest dir /repo --config /repo/.gitleaks.toml --no-banner
 
 run-dev:
 	@$(MAKE) run ENV=dev

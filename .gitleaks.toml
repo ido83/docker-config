@@ -1,0 +1,9 @@
+title = "config-repo gitleaks config"
+
+[allowlist]
+description = "Ignore local-only generated and example files"
+paths = [
+  '''^\.docker-config/''',
+  '''^infra-base/env/\.env\.secrets$''',
+  '''^infra-base/env/\.env\.secrets\.example$'''
+]
