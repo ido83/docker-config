@@ -79,7 +79,7 @@ Shared only:
 - shared Docker networks
 - shared Postgres
 - shared observability
-- shared non-secret env defaults
+- shared non-secret env defaults and local secret placeholders
 
 This repo should stay generic. It should not own application-specific routes, images, or secrets.
 
@@ -143,6 +143,8 @@ make init
 make run
 ```
 
+`make init` will also create `infra-base/env/.env.secrets` from the example file if it does not exist yet.
+
 If the child repos are not cloned yet, `make init` can also clone them for you when you provide repo URLs:
 
 ```bash
@@ -203,6 +205,15 @@ make clear
 ./validate.sh
 ```
 
+If needed, `make init` creates a local secrets file from the example in `infra-base/env`.
+You can also create it manually:
+
+```bash
+cp infra-base/env/.env.secrets.example infra-base/env/.env.secrets
+```
+
+Then replace the placeholder values in `infra-base/env/.env.secrets` with real local secrets. Do not commit that file.
+
 ## Per-Repo Usage
 
 Inside each app repo you can also run:
@@ -220,3 +231,4 @@ Those scripts expect `infra-base` to exist as a sibling at `../infra-base`.
 - In this workspace the repos are side by side.
 - The root repo is intended to be an agnostic `config-repo`, not the source-of-truth repo for the child applications.
 - In a real organization, each app repo can instead include `infra-base` as a submodule named `infra-base/`.
+

@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
-# validate.sh  —  Validate all compose stacks render without errors
-# Run this in CI before any docker compose up to catch config merge issues early.
-# Usage: ./validate.sh
+# validate.sh  -  Validate all compose stacks render without errors
 
 set -euo pipefail
 
@@ -11,7 +9,16 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export DOCKER_CONFIG="$ROOT_DIR/.docker-config"
 mkdir -p "$DOCKER_CONFIG"
 
-echo "🔍 Validating all compose stacks..."
+ENV_FILES=(
+  "--env-file" "$ROOT_DIR/infra-base/env/.env.base"
+  "--env-file" "$ROOT_DIR/infra-base/env/.env.networking"
+)
+
+if [[ -f "$ROOT_DIR/infra-base/env/.env.secrets" ]]; then
+  ENV_FILES+=("--env-file" "$ROOT_DIR/infra-base/env/.env.secrets")
+fi
+
+echo "Validating all compose stacks..."
 echo ""
 
 ERRORS=0
@@ -20,7 +27,7 @@ for project in "${PROJECTS[@]}"; do
   PROJECT_DIR="$ROOT_DIR/$project"
 
   if [[ ! -d "$PROJECT_DIR" ]]; then
-    echo "⚠️  Skipping $project — directory not found"
+    echo "Skipping $project - directory not found"
     continue
   fi
 
@@ -29,19 +36,20 @@ for project in "${PROJECTS[@]}"; do
     BASE="$PROJECT_DIR/docker-compose.yml"
 
     if [[ ! -f "$OVERRIDE" ]]; then
-      continue  # Not every project has every env override
+      continue
     fi
 
-    echo -n "  [$project] ENV=$env → "
+    echo -n "  [$project] ENV=$env -> "
 
     if docker compose \
+        "${ENV_FILES[@]}" \
         -f "$BASE" \
         -f "$OVERRIDE" \
         --project-directory "$PROJECT_DIR" \
         config --quiet 2>&1; then
-      echo "✅"
+      echo "OK"
     else
-      echo "❌ FAILED"
+      echo "FAILED"
       ERRORS=$((ERRORS + 1))
     fi
   done
@@ -49,8 +57,8 @@ done
 
 echo ""
 if [[ $ERRORS -gt 0 ]]; then
-  echo "❌ $ERRORS stack(s) failed validation."
+  echo "$ERRORS stack(s) failed validation."
   exit 1
 else
-  echo "✅ All stacks valid."
+  echo "All stacks valid."
 fi

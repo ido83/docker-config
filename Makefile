@@ -9,6 +9,10 @@ REPO_WORKER_URL ?=
 
 BASE_COMPOSE := $(REPO)/docker-compose.yml
 ENV_COMPOSE := $(REPO)/docker-compose.$(ENV).yml
+ENV_FILE_FLAGS := --env-file infra-base/env/.env.base --env-file infra-base/env/.env.networking
+ifneq ($(wildcard infra-base/env/.env.secrets),)
+ENV_FILE_FLAGS += --env-file infra-base/env/.env.secrets
+endif
 
 COMPOSE_FILES := -f $(BASE_COMPOSE)
 ifneq ($(wildcard $(ENV_COMPOSE)),)
@@ -16,14 +20,14 @@ COMPOSE_FILES += -f $(ENV_COMPOSE)
 endif
 
 DOCKER := set DOCKER_CONFIG=$(DOCKER_CONFIG_DIR)&& docker
-DC := $(DOCKER) compose --project-directory $(REPO) $(COMPOSE_FILES) -p $(PROJECT_NAME)-$(ENV)
+DC := $(DOCKER) compose $(ENV_FILE_FLAGS) --project-directory $(REPO) $(COMPOSE_FILES) -p $(PROJECT_NAME)-$(ENV)
 
 .PHONY: help init clone-repos clone-infra-base clone-repo-api-service clone-repo-frontend clone-repo-worker setup run up run-fg stop down restart clear clean logs ps config validate pull build
 .PHONY: run-dev run-ci run-prod stop-dev stop-ci stop-prod clear-dev clear-ci clear-prod
 
 help:
 	@echo "Available targets:"
-	@echo "  make init                 Create shared Docker networks"
+	@echo "  make init                 Clone repos, create local secrets file, and create shared Docker networks"
 	@echo "  make clone-repos          Clone missing child repos when URLs are provided"
 	@echo "  make setup                Prepare the local Docker environment"
 	@echo "  make run                  Start the stack in detached mode (ENV=dev by default)"
@@ -47,6 +51,7 @@ help:
 
 init: clone-repos
 	@if not exist ".docker-config" mkdir ".docker-config"
+	@if not exist "infra-base\\env\\.env.secrets" (if exist "infra-base\\env\\.env.secrets.example" (copy /Y "infra-base\\env\\.env.secrets.example" "infra-base\\env\\.env.secrets" >NUL && echo "Created infra-base\\env\\.env.secrets from example. Update it with real local secrets.") else (echo "Skipping local secrets file creation. Missing infra-base\\env\\.env.secrets.example."))
 	-@$(DOCKER) network create app-network >NUL 2>&1
 	-@$(DOCKER) network create monitoring-network >NUL 2>&1
 	@echo "Shared Docker networks are ready."
